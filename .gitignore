@@ -4,3 +4,5 @@ img_captioning/__pycache__/*
 img_captioning/flickr8k/*
 img_captioning/runs/*
 img_captioning/test_examples/*
+
+*.pth.tar
