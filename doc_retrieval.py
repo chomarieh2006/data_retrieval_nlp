@@ -99,8 +99,6 @@ txt_list = ["/home/marie/Downloads/sample_txt_pgs/Ahuja_pg1.txt",
             "/home/marie/Downloads/sample_txt_pgs/Rice2003_pg1.txt",
             "/home/marie/Downloads/sample_txt_pgs/Lim2019_pg1.txt"]
 
-txt_list = ["/home/marie/Downloads/sample_txt_pgs/Ahuja_pg1.txt",
-            "/home/marie/Downloads/sample_txt_pgs/Gill_pg1.txt"]
 
 for file in txt_list:
     name = file.split('/')
