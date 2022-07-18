@@ -2,11 +2,10 @@
 import torch  # machine learning
 import os.path  # detects if file exists
 import glob  # collects all files in path
-import numpy as np  # for 2d array
 from transformers import BertTokenizer, BertModel  # bert model
 from tabulate import tabulate  # print 2d array
-import time #calculate number of seconds
-import numpy as np #cosin similarity
+import time # calculate number of seconds
+import numpy as np # cosine similarity
 
 
 def clean_text(filename):
@@ -18,6 +17,7 @@ def clean_text(filename):
         text = f.read()
 
     doc = nlp(text)
+
     sentence_list = []
     for sent in doc.sents:
         if sent[0].is_title and sent[-1].is_punct:
@@ -86,6 +86,7 @@ def BERT_tokenizer(batch):
 
 # bert model
 my_encoder = BERT_Model(bert_model, BERT_tokenizer)
+
 
 # create embedding for files and store in pt file
 txt_list = ["/home/marie/Downloads/sample_txt_pgs/Ahuja_pg1.txt",
@@ -191,7 +192,7 @@ for txt in result_list:
 
     result[0] = result[0] + ".txt"  # result[0] = file name
     result[1] = result[1].replace(".txt", "")
-    result[1] = result[1].replace("pg", "Page ")  # result[1] = page number
+    result[1] = result[1].replace("pg", "")  # result[1] = page number
     result[-1] = result[-1].replace("sentence", "")  # result[-1] = sentence number
     num = int(result[-1])
     with open(f"/home/marie/Downloads/sample_txt_pgs_clean/{filename}", 'r') as f:
@@ -200,4 +201,92 @@ for txt in result_list:
 
     display = np.append(display, np.array([[f"{order}", similarity, result[0], result[1], sentence]]), axis=0)  # append results
 
-print(tabulate(display, headers=["Result", "Similarity", "File", "Page", "Text"]))  # print with headers
+print(tabulate(display, headers=["Result", "Similarity", "File", "Page", "Text"]))  # print with headers# import libraries
+2
+import torch  # machine learning
+3
+import os.path  # detects if file exists
+4
+import glob  # collects all files in path
+5
+import numpy as np  # for 2d array
+6
+from transformers import BertTokenizer, BertModel  # bert model
+7
+from tabulate import tabulate  # print 2d array
+8
+import time #calculate number of seconds
+9
+import numpy as np #cosin similarity
+10
+​
+11
+​
+12
+def clean_text(filename):
+13
+    import spacy
+14
+    import re
+15
+​
+16
+    nlp = spacy.load("en_core_web_sm")
+17
+    with open(filename, 'r') as f:
+18
+        text = f.read()
+19
+​
+20
+    doc = nlp(text)
+21
+    sentence_list = []
+22
+    for sent in doc.sents:
+23
+        if sent[0].is_title and sent[-1].is_punct:
+24
+            has_noun = 2
+25
+            has_verb = 1
+26
+            for token in sent:
+27
+                if token.pos_ in ["NOUN", "PROPN", "PRON"]:
+28
+                    has_noun -= 1
+29
+                elif token.pos_ == "VERB":
+30
+                    has_verb -= 1
+31
+            if has_noun < 1 and has_verb < 1:
+32
+                sentence_list.append(sent.text)
+33
+​
+34
+    for i in range(0, len(sentence_list)):
+35
+        sentence_list[i] = re.sub("\n", "", sentence_list[i])
+36
+​
+37
+    return sentence_list
+38
+​
+39
+​
+40
+# create class for dataset
+41
+class my_dataset(torch.utils.data.Dataset):
+42
+    def __init__(self, filename):
+43
+        self.sentences = clean_text(filename)
+44
+        new_filename = filename.split("/")
+45
+        new_filename = new_filename[-1]
