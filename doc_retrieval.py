@@ -11,12 +11,45 @@ from tqdm import tqdm  # track progress
 import argparse  # substitution
 from sklearn.cluster import KMeans  # kmeans clustering
 import gc # garbage collect
+import PyPDF2 # pdf
 
+
+#convert via pages
+# pdf_list = glob.glob("/home/marie/Downloads/sample_pdf/*.pdf")
+# for file in pdf_list:
+# 
+#    name = file.split("/")
+#    name = name[-1].replace(".pdf", "")
+#    pdffileobj = open(file, 'rb')
+#    pdfreader = PyPDF2.PdfFileReader(pdffileobj)
+#    x = pdfreader.numPages
+# 
+#    for page in range(0,x):
+#        text_file_name = "/home/marie/Downloads/work/"+name+f"_pg{page}.txt"
+# 
+#        if os.path.exists(text_file_name):
+#            continue
+# 
+#        try:
+# 
+#            print(file)
+# 
+#            text = ""
+#            pageobj = pdfreader.getPage(page)
+#            text = text + " " + pageobj.extractText()
+# 
+#            with open(text_file_name, 'w') as f:
+#                f.writelines(text)
+#        except:
+#            print(file, "error")
+
+
+# arg parse
 parser = argparse.ArgumentParser()
 parser.add_argument('--root', default="/home/marie/Downloads/")
 parser.add_argument('--embedding', action='store_true')
 parser.add_argument('--debug', action='store_true')
-parser.add_argument('--mode', default="kmeans,6")
+parser.add_argument('--mode', default="sent,1")
 args = parser.parse_args()
 
 
@@ -128,6 +161,7 @@ if args.embedding:
 
         torch.save(file_embedding, pt_file_name)  # save in pt file
 
+
 # args.debug = True
 if args.debug:
     pt_list = ["/home/marie/Downloads/test_pt/Ahuja_pg1.pt",
@@ -147,6 +181,7 @@ t0 = time.time()
 
 normalized, tup = [], []
 
+
 # normalize sentences
 for pt_file in tqdm(pt_list):
     sentence_num, pt_load = 0, torch.load(pt_file)
@@ -159,27 +194,37 @@ for pt_file in tqdm(pt_list):
 r_list = []
 mode, num_r = args.mode.split(",")
 
+
 # average
 # r = torch.nn.functional.normalize(sum(normalized), dim=0)
 # r_list.append(r)
+
 
 if r_list:
     pass
 else:
     num_r = int(num_r)
 
+
+    # kmeans
     if mode == "kmeans":
         normalized_ = [norm.numpy() for norm in random.choices(normalized, k=min(100000, len(normalized)))]
         kmeans = KMeans(n_clusters=num_r, random_state=0, n_init=1, verbose=10).fit(normalized_)
         r_list = torch.nn.functional.normalize(torch.tensor(kmeans.cluster_centers_).float())
 
     # random
-    if mode == "rand":
+    elif mode == "rand":
         for i in range(0, num_r):
             r_list.append(torch.nn.functional.normalize(torch.rand(768), dim=0))
 
+    # sentence
+    else:
+        r_list = random.choices(normalized, k=num_r)
+
+
 gc.collect()
 cos = torch.nn.CosineSimilarity(dim=0)
+
 
 # similarity between sentences and r
 cos_list = [torch.Tensor([cos(sent_, r_vec) for r_vec in r_list]) for sent_ in tqdm(normalized)]
@@ -187,8 +232,11 @@ cos_list = [torch.Tensor([cos(sent_, r_vec) for r_vec in r_list]) for sent_ in t
 t1 = time.time()
 print("\nLoad Finished(", t1 - t0, "seconds )\n")  # display time
 
+
 # input query
 query_list = ["Cognitive science is the study of the human mind and brain", "Cognitive scientists study intelligence and behavior with a focus on how nervous systems represent, process, and transform information", "Cognitive science is an interdisciplinary field with contributors from various fields, including psychology, neuroscience, linguistics, philosophy of mind, computer science, anthropology and biology", "Artificial intelligence involves the study of cognitive phenomena in machines to implement aspects of human intelligence in computers", "Consciousness is the awareness of external objects and experiences within oneself", "One of the fundamental concepts of cognitive science is that thinking can best be understood in terms of representational structures in the mind and computational procedures that operate on those structures", "The cognitive sciences began as an intellectual movement in the 1950s, called the cognitive revolution", "Cognitive science has a diversity of outlooks and methods that researchers in different fields bring to the study of mind and intelligence", "The goal of cognitive science is to understand the representations and processes in our minds that underwrite these capacities", "The brain controls all functions of the body, interprets information from the outside world, and embodies the essence of the mind and soul"]
+# query_list = []
+# query_list.append(input("Search: "))
 
 k = -1
 
@@ -210,8 +258,8 @@ for text in query_list:
     for x in data_loader:
         query_embedding.append(my_encoder(x))
 
-    # cosine similarity between query and sentences: want 1
 
+    # cosine similarity between query and sentences: want 1
     if mode == "base":
         for pt_file in tqdm(pt_list):
             pt_load, sentence_num, similarity_ = torch.load(pt_file), 0, []
@@ -262,6 +310,7 @@ for text in query_list:
                 similaritylist = similaritylist[0:num]
 
         print("\nskips:", skip)
+
 
     # return top 5 results: result number, file, page, sentence
     for i in range(0, num):
