@@ -84,6 +84,6 @@ def extract_pdfdir_text(pdfdir, txtdir):
 
 
 if __name__ == "__main__":
-    pdfdir = "/home/changxu/internship/testdata/pdf/"
-    txtdir = "/home/changxu/internship/testdata/txt/"
+    pdfdir = input("Enter directory of source files: ")             # ex. "/home/changxu/internship/testdata/pdf/"
+    txtdir = input("Enter directory to store cleaned text files: ") # ex. "/home/changxu/internship/testdata/txt/"
     extract_pdfdir_text(pdfdir, txtdir)

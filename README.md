@@ -8,10 +8,11 @@ Employs semantic embedding (for meaning rather than word frequency) and convolut
 ## Abstract
 Modern devices allow users to search for certain files, but solely utilize the names of the files, instead of the contents stored within. As humanity progresses technologically, the increasing amounts of data will serve as a barrier to a practical application of the latter task in terms of time and cost. This will necessitate accurate methods for finding information in a timely and effective manner. In this work, we create a system to search for relevant content within texts and images in respect to a user’s queries utilizing NLP that is both productive and accurate when tested on over 300,000 sources of data.
 
-## Usage
-Store a set of .PDF files and images in a directory you can remember.
+## Prerequisites
 
-Install:
+**Installation**
+
+Python Modules
 
 ```
 pip install torch
@@ -22,18 +23,35 @@ pip install tqdm
 pip install argparse
 pip install sklearn
 pip install PyPDF2
-```
-To convert .PDF to .TXT files, run:
-
-```
-python3 pdf_to_txt.py
+pip install pytesseract
+pip install tqdm
+pip install pdf2image
 ```
 
-To search for .TXT files, run:
+Tesseract OCR
 
 ```
-python3 doc_retrieval2.py
+sudo apt install tesseract-ocr
 ```
+
+## Usage
+Requires a set of .pdf/.txt files and images to run this program. Store these in a directory.
+
+**Text Extraction**
+
+To be able to analyze the contents of the source files, they will need to be converted into plain text. 
+
+For this to occur, run `pdf_to_text.py` and input the directory of the source files, and a directory to place the extracted and cleaned text into. 
+
+Note: This is temporary and will soon be implemented into the main program to take arguments. 
+
+**Generate Embeddings and Data Retrieval**
+
+Once plain text files have been obtained, run `doc_retrieval2.py`.
+
+Each time you run the program, it will generate embeddings for any new text (which will include everything when running this program for the first time). This may take a significant amount of time for large datasets.
+
+Once embeddings have been generated, you will be prompted for a search term. 
 
 ## Note
 
