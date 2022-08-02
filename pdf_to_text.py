@@ -1,33 +1,88 @@
-# convert via pages
 import glob
 import PyPDF2
-#import shutil
 import os.path
+import spacy
+import re
+import pytesseract
+from pdf2image import convert_from_path
 
-pdf_list = glob.glob("/home/marie/Downloads/sample_pdf/*.pdf")
-for file in pdf_list:
+# separate text into sentences and clean
+def clean_text(text):
+    # Install using: python -m spacy download en_core_web_sm
+    nlp = spacy.load("en_core_web_sm")
 
-   name = file.split("/")
-   name = name[-1].replace(".pdf", "")
-   pdffileobj = open(file, 'rb')
-   pdfreader = PyPDF2.PdfFileReader(pdffileobj)
-   x = pdfreader.numPages
+    doc, sentence_list = nlp(text), []
 
-   for page in range(0,x):
-       text_file_name = "/home/marie/Downloads/work/"+name+f"_pg{page}.txt"
+    for sent in doc.sents:
+        if sent[0].is_title and sent[-1].is_punct:
+            has_noun = 2
+            has_verb = 1
 
-       if os.path.exists(text_file_name):
-           continue
+            for token in sent:
+                if token.pos_ in ["NOUN", "PROPN", "PRON"]:
+                    has_noun -= 1
 
-       try:
+                elif token.pos_ == "VERB":
+                    has_verb -= 1
 
-           print(file)
+            if has_noun < 1 and has_verb < 1:
+                sentence_list.append(sent.text)
 
-           text = ""
-           pageobj = pdfreader.getPage(page)
-           text = text + " " + pageobj.extractText()
+    for i in range(0, len(sentence_list)):
+        sentence_list[i] = sentence_list[i].strip()
+        sentence_list[i] = re.sub("@\S+", "", sentence_list[i])
+        sentence_list[i] = re.sub("#", "", sentence_list[i])
+        sentence_list[i] = re.sub("\n", "", sentence_list[i])
+        sentence_list[i] = re.sub("-", "", sentence_list[i])
+        sentence_list[i] = re.sub("[\(\[].*?[\)\]]", "", sentence_list[i])
+        if sentence_list[i].find(' ') == -1:
+            sentence_list[i] = None
 
-           with open(text_file_name, 'w') as f:
-               f.writelines(text)
-       except:
-           print(file, "error")
+    sentence_list = [i for i in sentence_list if i]
+    return sentence_list
+
+def extract_pdfdir_text(pdfdir, txtdir):
+    pdf_list = glob.glob(pdfdir + "*.pdf")
+
+    for file in pdf_list:
+        name = file.split("/")
+        name = name[-1].replace(".pdf", "")
+
+        pdffileobj = open(file, 'rb')
+        pdfreader = PyPDF2.PdfFileReader(pdffileobj)
+        numpages = pdfreader.numPages
+
+        for page in range(numpages):
+            text_file_name = txtdir+name+f"_pg{page}.txt"
+
+            # file has already been converted to text
+            if os.path.exists(text_file_name):
+                continue
+
+            text = ""
+
+            try:
+                pageobj = pdfreader.getPage(page)
+                text = pageobj.extractText()
+            except:
+                print(file, "error reading pdf")
+
+            sentence_list = clean_text(text)
+
+            if len(sentence_list) == 0:
+                page_img = convert_from_path(file)[page]
+                text = pytesseract.image_to_string(page_img)
+                sentence_list = clean_text(text)
+
+            try:
+                with open(text_file_name, 'w') as f:
+                    for sentence in sentence_list:
+                        f.writelines(sentence + "\n")
+            except:
+                print(text_file_name, "error writing text")
+
+
+if __name__ == "__main__":
+    pdfdir = "/home/changxu/internship/testdata/pdf/"
+    txtdir = "/home/changxu/internship/testdata/txt/"
+    extract_pdfdir_text(pdfdir, txtdir)
