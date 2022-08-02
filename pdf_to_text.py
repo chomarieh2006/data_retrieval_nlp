@@ -5,6 +5,7 @@ import spacy
 import re
 import pytesseract
 from pdf2image import convert_from_path
+from tqdm import tqdm
 
 # separate text into sentences and clean
 def clean_text(text):
@@ -44,7 +45,7 @@ def clean_text(text):
 def extract_pdfdir_text(pdfdir, txtdir):
     pdf_list = glob.glob(pdfdir + "*.pdf")
 
-    for file in pdf_list:
+    for index, file in enumerate(tqdm(pdf_list)):
         name = file.split("/")
         name = name[-1].replace(".pdf", "")
 
@@ -52,7 +53,7 @@ def extract_pdfdir_text(pdfdir, txtdir):
         pdfreader = PyPDF2.PdfFileReader(pdffileobj)
         numpages = pdfreader.numPages
 
-        for page in range(numpages):
+        for page in tqdm(range(numpages), leave=False):
             text_file_name = txtdir+name+f"_pg{page}.txt"
 
             # file has already been converted to text
