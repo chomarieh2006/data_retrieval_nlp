@@ -9,22 +9,7 @@ Employs semantic embedding (for meaning rather than word frequency) and convolut
 Modern devices allow users to search for certain files, but solely utilize the names of the files, instead of the contents stored within. As humanity progresses technologically, the increasing amounts of data will serve as a barrier to a practical application of the latter task in terms of time and cost. This will necessitate accurate methods for finding information in a timely and effective manner. In this work, we create a system to search for relevant content within texts and images in respect to a user’s queries utilizing NLP that is both productive and accurate when tested on over 300,000 sources of data.
 
 ## Usage
-Store a set of .PDF files and images or download these prepared .TXT files in a directory you can remember.
-
-<!DOCTYPE html>
-<html>
-<body>
-
-<a href="/home/marie/Downloads/sample_txt_pgs.7z" download>
-
-<p>Download
-<a>
-
-<p><b>Note:</b> The download attribute is not supported in Edge version 12, IE, Safari 10 (and earlier), or Opera version 12 (and earlier).</p>
-
-</body>
-</html>
-
+Store a set of .PDF files and images in a directory you can remember.
 
 Install:
 
