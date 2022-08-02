@@ -16,6 +16,18 @@ Cosine Similarity is a measure of proximity between two vectors by determining t
 ## Usage
 Requires a set of .txt files and images to run this program. 
 
+Install:
+
+```
+pip install torch
+pip install transformers
+pip install tabulate
+pip install numpy
+pip install tqdm
+pip install argparse
+pip install sklearn
+```
+
 To search for .txt files, run:
 
 ```
