@@ -11,7 +11,7 @@ import argparse  # substitution
 from sklearn.cluster import KMeans  # kmeans clustering
 import gc  # garbage collect
 
-path = input("Path: ")
+path = input("Path for .TXT Files: ")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root', default=f"{path}")
