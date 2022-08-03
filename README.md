@@ -35,16 +35,24 @@ sudo apt install tesseract-ocr
 ```
 
 ## Usage
-Download these [files](https://www.dropbox.com/sh/4gedwm2sc7ylsxf/AAB798H6sdVW4n9iV5TZWF5Qa?dl=0). Make sure to store in a directory you remember. Extract the zip files in that directory.
 
-
-**Text Extraction**
+Have a set of .PDF files with text ready in a directory.
 
 To be able to analyze the contents of the source files, they will need to be converted into plain text. 
 
 For this to occur, run `pdf_to_text.py` and input the directory of the source files, and a directory to place the extracted and cleaned text into. 
 
 Note: This is temporary and will soon be implemented into the main program to take arguments. 
+
+
+***OR***
+
+
+Download these [files](https://www.dropbox.com/sh/4gedwm2sc7ylsxf/AAB798H6sdVW4n9iV5TZWF5Qa?dl=0). 
+
+Make sure to store in a directory you remember and extract the zip files in that directory. 
+
+No further preparation steps are necessary.
 
 
 **Generate Embeddings and Data Retrieval**
