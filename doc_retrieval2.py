@@ -11,7 +11,7 @@ import argparse  # substitution
 from sklearn.cluster import KMeans  # kmeans clustering
 import gc  # garbage collect
 
-path = input("Path for .TXT Files: ")
+path = input("Path to directory: ")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--root', default=f"{path}")
@@ -66,9 +66,9 @@ class my_dataset(torch.utils.data.Dataset):
    def __init__(self, filename):
        self.sentences = clean_text(filename)
        new_filename = filename.split("/")
-       new_filename = "".join([args.root, "sample_txt_pgs_clean", new_filename[-1]])
+       new = "".join([args.root, "sample_txt_pgs_clean", new_filename[-1]])
 
-       with open(new_filename[-1], 'w') as f:
+       with open(new, 'w') as f:
            for sentence in self.sentences:
                f.writelines(sentence + "\n")
 
@@ -111,40 +111,26 @@ def BERT_tokenizer(batch):
 my_encoder = BERT_Model(bert_model, BERT_tokenizer)
 
 # create embedding for files and store in pt file
-if args.embedding:
-   txt_list, file_embedding = [], []  # glob.glob(args.root + "sample_txt_pgs/*.txt")
+# if embedding:
+#     txt_list, file_embedding = glob.glob(args.root+"/*.txt"), []  # glob.glob(args.root + "sample_txt_pgs/*.txt")
+#
+#     for file in txt_list:
+#        name = file.split('/')
+#        pt_file_name = args.root + "test_pt/" + name[-1].replace(".txt", ".pt")
+#
+#        if os.path.exists(pt_file_name):
+#            continue
+#
+#        dataset = my_dataset(file)
+#        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
+#                                                  drop_last=False, collate_fn=BERT_tokenizer)
+#
+#        for x in data_loader:
+#            file_embedding.append(my_encoder(x))
+#
+#        torch.save(file_embedding, pt_file_name)  # save in pt file
 
-   for file in txt_list:
-       name = file.split('/')
-       pt_file_name = args.root + "test_pt/" + name[-1].replace(".txt", ".pt")
-
-       if os.path.exists(pt_file_name):
-           continue
-
-       dataset = my_dataset(file)
-       data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
-                                                 drop_last=False, collate_fn=BERT_tokenizer)
-
-       for x in data_loader:
-           file_embedding.append(my_encoder(x))
-
-       torch.save(file_embedding, pt_file_name)  # save in pt file
-
-# args.debug = True
-if args.debug:
-   pt_list = ["/home/marie/Downloads/test_pt/Ahuja_pg1.pt",
-              "/home/marie/Downloads/test_pt/Titone2002_pg1.pt",
-              "/home/marie/Downloads/test_pt/Gill_pg1.pt",
-              "/home/marie/Downloads/test_pt/Ramsey2003_pg1.pt",
-              "/home/marie/Downloads/test_pt/Sommer2006_pg1.pt",
-              "/home/marie/Downloads/test_pt/Isler2017_pg1.pt",
-              "/home/marie/Downloads/test_pt/Johnson2012_pg1.pt",
-              "/home/marie/Downloads/test_pt/Morris2011_pg1.pt",
-              "/home/marie/Downloads/test_pt/Rice2003_pg1.pt",
-              "/home/marie/Downloads/test_pt/Brook2015_pg16.pt"]
-   pt_list = glob.glob(args.root + "test_pt/*.pt")[:1000]
-else:
-   pt_list = glob.glob(args.root + "test_pt/*.pt")[:30000]
+pt_list = glob.glob(args.root + "test_pt/*.pt")[:30000]
 
 
 t0 = time.time()
