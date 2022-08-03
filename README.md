@@ -35,7 +35,8 @@ sudo apt install tesseract-ocr
 ```
 
 ## Usage
-Requires a set of .pdf/.txt files and images to run this program. Store these in a directory.
+Download these [files](https://www.dropbox.com/sh/4gedwm2sc7ylsxf/AAB798H6sdVW4n9iV5TZWF5Qa?dl=0). Make sure to store in a directory you remember. Extract the zip files in that directory.
+
 
 **Text Extraction**
 
@@ -45,13 +46,18 @@ For this to occur, run `pdf_to_text.py` and input the directory of the source fi
 
 Note: This is temporary and will soon be implemented into the main program to take arguments. 
 
+
 **Generate Embeddings and Data Retrieval**
 
 Once plain text files have been obtained, run `doc_retrieval2.py`.
 
+When asked for "Path to directory," type path to downloaded directory and the folder name which contained the zip files. 
+For example: home/name/Documents/demo/
+
 Each time you run the program, it will generate embeddings for any new text (which will include everything when running this program for the first time). This may take a significant amount of time for large datasets.
 
 Once embeddings have been generated, you will be prompted for a search term. 
+
 
 ## Note
 
