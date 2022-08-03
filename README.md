@@ -36,20 +36,6 @@ sudo apt install tesseract-ocr
 
 ## Usage
 
-Have a set of .PDF files with text ready in a directory.
-
-To be able to analyze the contents of the source files, they will need to be converted into plain text. 
-
-In the same directory as the source files, create two folders: 1) *test_pt* and 2) *sample_txt_clean_pgs*
-
-For this to occur, run `pdf_to_text.py` and input the directory of the source files, and a directory to place the extracted and cleaned text into (*sample_txt_clean_pgs*). 
-
-Note: This is temporary and will soon be implemented into the main program to take arguments. 
-
-
-***OR***
-
-
 Download these [files](https://www.dropbox.com/sh/4gedwm2sc7ylsxf/AAB798H6sdVW4n9iV5TZWF5Qa?dl=0). 
 
 Make sure to store in a directory you remember and extract the zip files in that directory. 
@@ -64,7 +50,7 @@ Once plain text files have been obtained, run `doc_retrieval2.py`.
 When asked for "Path to directory," type path to downloaded directory and the folder name which contained the zip files. 
 For example: */home/name/Documents/demo/*
 
-Each time you run the program, it will generate embeddings for any new text (which will include everything when running this program for the first time unless you downloaded the pre-organized files). This may take a significant amount of time for large datasets.
+Each time you run the program, it will generate embeddings for any new text (which will include everything when running this program for the first time, unless you have downloaded the pre-organized files). This may take a significant amount of time for large datasets.
 
 Once embeddings have been generated, you will be prompted for a search term. 
 
