@@ -20,8 +20,8 @@ parser.add_argument('--source', default=f"/home/{os.getlogin()}/daviesearch/")
 parser.add_argument(
     '--data', default=f"/home/{os.getlogin()}/daviesearch_data/")
 parser.add_argument('--extract_text', action='store_true')
-parser.add_argument('--embeddings', action='store_true')
-parser.add_argument('--debug', action='store_true')
+parser.add_argument('--embeddings', action='store_true', default=True)
+parser.add_argument('--debug', action='store_true', default=True)
 # optimized vs nonoptimized (base if no optimization,
 parser.add_argument('--mode', default="base,0")
 # kmeans, #clusters if want optimization)
