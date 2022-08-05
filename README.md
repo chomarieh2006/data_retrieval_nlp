@@ -47,14 +47,10 @@ No further preparation steps are necessary.
 
 Once plain text files have been obtained, run `doc_retrieval.py`.
 
-When asked for "Path to directory," type path to downloaded directory and the folder name which contained the zip files. 
+When asked for "Path to directory," type path to directory which contains the zip files. 
 For example: */home/name/Documents/demo/*
 
 Each time you run the program, it will generate embeddings for any new text (which will include everything when running this program for the first time, unless you have downloaded the pre-organized files). This may take a significant amount of time for large datasets.
 
 Once embeddings have been generated, you will be prompted for a search term. 
 
-
-## Note
-
-Program is not yet finished and is subject to change
