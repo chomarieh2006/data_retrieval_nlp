@@ -1,6 +1,6 @@
 import glob
 import PyPDF2
-import os.path
+import os
 import spacy
 import re
 import pytesseract
@@ -43,7 +43,10 @@ def clean_text(text):
     return sentence_list
 
 def extract_pdfdir_text(pdfdir, txtdir):
-    pdf_list = glob.glob(pdfdir + "*.pdf")
+    pdf_list = glob.glob(os.path.join(pdfdir, "*.pdf"))
+    
+    print("\n-- EXTRACTING TEXT to", txtdir)
+    print("(Files, Page of Current File)")
 
     for index, file in enumerate(tqdm(pdf_list)):
         name = file.split("/")
@@ -52,9 +55,9 @@ def extract_pdfdir_text(pdfdir, txtdir):
         pdffileobj = open(file, 'rb')
         pdfreader = PyPDF2.PdfFileReader(pdffileobj)
         numpages = pdfreader.numPages
-
+        
         for page in tqdm(range(numpages), leave=False):
-            text_file_name = txtdir+name+f"_pg{page}.txt"
+            text_file_name = os.path.join(txtdir, name+f"_pg{page}.txt")
 
             # file has already been converted to text
             if os.path.exists(text_file_name):

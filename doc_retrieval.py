@@ -1,4 +1,5 @@
 # import libraries
+import os
 import torch  # machine learning
 import os.path  # detects if file exists
 import glob  # collects all files in path
@@ -10,93 +11,75 @@ from tqdm import tqdm  # track progress
 import argparse  # substitution
 from sklearn.cluster import KMeans  # kmeans clustering
 import gc  # garbage collect
+from pdf_to_text import extract_pdfdir_text
 
-path = input("Path to directory: ")
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--root', default=f"{path}")
-parser.add_argument('--embedding', action='store_true')
+# root is source data
+parser.add_argument('--source', default=f"/home/{os.getlogin()}/daviesearch/")
+parser.add_argument(
+    '--data', default=f"/home/{os.getlogin()}/daviesearch_data/")
+parser.add_argument('--extract_text', action='store_true')
+parser.add_argument('--embeddings', action='store_true')
 parser.add_argument('--debug', action='store_true')
+# optimized vs nonoptimized (base if no optimization,
 parser.add_argument('--mode', default="base,0")
+# kmeans, #clusters if want optimization)
 parser.add_argument('--nest', action='store_true')
 args = parser.parse_args()
 
 
 # separate text into sentences and clean
-def clean_text(filename):
-   import spacy  # identify sentences
-   import re  # replace
-   nlp = spacy.load("en_core_web_sm")
-   with open(filename, 'r') as f:
-       text = f.read()
+def read_file(filename):
 
-   doc, sentence_list = nlp(text), []
+    sentence_list = []
 
-   for sent in doc.sents:
-       if sent[0].is_title and sent[-1].is_punct:
-           has_noun = 2
-           has_verb = 1
+    try:
+        with open(filename, 'r') as f:
+            sentence_list = (f.readlines())
+    except:
+        print("error reading sentence file", filename)
 
-           for token in sent:
-               if token.pos_ in ["NOUN", "PROPN", "PRON"]:
-                   has_noun -= 1
-
-               elif token.pos_ == "VERB":
-                   has_verb -= 1
-
-           if has_noun < 1 and has_verb < 1:
-               sentence_list.append(sent.text)
-
-   for i in range(0, len(sentence_list)):
-       sentence_list[i] = sentence_list[i].strip()
-       sentence_list[i] = re.sub("@\S+", "", sentence_list[i])
-       sentence_list[i] = re.sub("#", "", sentence_list[i])
-       sentence_list[i] = re.sub("\n", "", sentence_list[i])
-       sentence_list[i] = re.sub("-", "", sentence_list[i])
-       sentence_list[i] = re.sub("[\(\[].*?[\)\]]", "", sentence_list[i])
-       if sentence_list[i].find(' ') == -1:
-           sentence_list[i] = None
-
-   sentence_list = [i for i in sentence_list if i]
-   return sentence_list
+    return sentence_list
 
 
 # create class for dataset
 class my_dataset(torch.utils.data.Dataset):
-   def __init__(self, filename):
-       self.sentences = clean_text(filename)
-       new_filename = filename.split("/")
-       new = "".join([args.root, "sample_txt_pgs_clean", new_filename[-1]])
+    def __init__(self, filename):
+        self.sentences = read_file(filename)
+        new_filename = filename.split("/")
+        new = os.path.join(args.data, "sample_txt_pgs_clean", new_filename[-1])
+        new = "".join([args.data, "sample_txt_pgs_clean", new_filename[-1]])
 
-       with open(new, 'w') as f:
-           for sentence in self.sentences:
-               f.writelines(sentence + "\n")
+        with open(new, 'w') as f:
+            for sentence in self.sentences:
+                f.writelines(sentence + "\n")
 
-   def __len__(self):
-       return len(self.sentences)
+    def __len__(self):
+        return len(self.sentences)
 
-   def __getitem__(self, idx):
-       x = self.sentences[idx]
-       return x
+    def __getitem__(self, idx):
+        x = self.sentences[idx]
+        return x
 
 
 # create bert model
 class BERT_Model(torch.nn.Module):
-   def __init__(self, pre_trained, tokenizer):
-       super(BERT_Model, self).__init__()
-       self.bert = pre_trained
-       self.tokenizer = tokenizer
-       self.output_dim = self.bert.config.hidden_size
+    def __init__(self, pre_trained, tokenizer):
+        super(BERT_Model, self).__init__()
+        self.bert = pre_trained
+        self.tokenizer = tokenizer
+        self.output_dim = self.bert.config.hidden_size
 
-   def forward(self, x):
-       model_output = self.bert(**x).last_hidden_state.detach()
-       model_output = torch.mean(model_output, dim=1)
-       return model_output
+    def forward(self, x):
+        model_output = self.bert(**x).last_hidden_state.detach()
+        model_output = torch.mean(model_output, dim=1)
+        return model_output
 
-   def encode(self, sentences):
-       tokenizes_sentences = self.tokenizer(sentences)
-       tokenizes_sentences = tokenizes_sentences.to(device)
-       return self.forward(tokenizes_sentences)
+    def encode(self, sentences):
+        tokenizes_sentences = self.tokenizer(sentences)
+        tokenizes_sentences = tokenizes_sentences.to(device)
+        return self.forward(tokenizes_sentences)
 
 
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
@@ -104,31 +87,46 @@ bert_model = BertModel.from_pretrained('bert-base-uncased')
 
 
 def BERT_tokenizer(batch):
-   return bert_tokenizer(batch, return_tensors="pt", padding=True, truncation=True)
+    return bert_tokenizer(batch, return_tensors="pt", padding=True, truncation=True)
 
 
 # bert model
 my_encoder = BERT_Model(bert_model, BERT_tokenizer)
 
+
+if args.extract_text:
+    print(os.path.join(args.data, "txt"))
+    print(args.source)
+    extract_pdfdir_text(args.source, os.path.join(args.data, "txt"))
+
 # create embedding for files and store in pt file
-# if embedding:
-#     txt_list, file_embedding = glob.glob(args.root+"/*.txt"), []  # glob.glob(args.root + "sample_txt_pgs/*.txt")
-#
-#     for file in txt_list:
-#        name = file.split('/')
-#        pt_file_name = args.root + "test_pt/" + name[-1].replace(".txt", ".pt")
-#
-#        if os.path.exists(pt_file_name):
-#            continue
-#
-#        dataset = my_dataset(file)
-#        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
-#                                                  drop_last=False, collate_fn=BERT_tokenizer)
-#
-#        for x in data_loader:
-#            file_embedding.append(my_encoder(x))
-#
-#        torch.save(file_embedding, pt_file_name)  # save in pt file
+if args.embeddings:
+    pt_file_dir = os.path.join(args.data, "pt")
+
+    if not os.path.exists(pt_file_dir):
+        os.makedirs(pt_file_dir)
+
+    txt_list, file_embedding = glob.glob(
+        os.path.join(args.data, "txt", "*.txt")), []  # getting text files
+
+    print("\n-- GENERATING EMBEDDINGS to", pt_file_dir)
+    for file in tqdm(txt_list):
+        name = file.split('/')
+        pt_file_name = os.path.join(
+            args.data, "pt", name[-1].replace(".txt", ".pt"))
+
+        if os.path.exists(pt_file_name):
+            continue
+
+        dataset = my_dataset(file)
+        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
+                                                  drop_last=False, collate_fn=BERT_tokenizer)
+
+        for x in data_loader:
+            file_embedding.append(my_encoder(x))
+
+        torch.save(file_embedding, pt_file_name)  # save in pt file
+
 
 pt_list = glob.glob(args.root + "test_pt/*.pt")[:30000]
 
@@ -297,5 +295,3 @@ for text in query_list:
    print("Query:", query[0], "\n")
    print(tabulate(display, headers=["Result", "Similarity", "File", "Page", "Text"]))  # print with headers
    print("\n")
-
-
