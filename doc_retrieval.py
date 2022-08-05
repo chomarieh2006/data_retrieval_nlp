@@ -48,8 +48,10 @@ class my_dataset(torch.utils.data.Dataset):
     def __init__(self, filename):
         self.sentences = read_file(filename)
         new_filename = filename.split("/")
-        new = os.path.join(args.data, "sample_txt_pgs_clean", new_filename[-1])
-        new = "".join([args.data, "sample_txt_pgs_clean", new_filename[-1]])
+        new = os.path.join(args.data, "txt_clean", new_filename[-1])
+
+        if not os.path.exists(os.path.join(args.data, "txt_clean")):
+            os.mkdir(os.path.join(args.data, "txt_clean"))
 
         with open(new, 'w') as f:
             for sentence in self.sentences:
@@ -111,6 +113,7 @@ if args.embeddings:
 
     print("\n-- GENERATING EMBEDDINGS to", pt_file_dir)
     for file in tqdm(txt_list):
+        file_embedding = []
         name = file.split('/')
         pt_file_name = os.path.join(
             args.data, "pt", name[-1].replace(".txt", ".pt"))
@@ -125,24 +128,26 @@ if args.embeddings:
         for x in data_loader:
             file_embedding.append(my_encoder(x))
 
+        print(len(file_embedding))
         torch.save(file_embedding, pt_file_name)  # save in pt file
 
 
-pt_list = glob.glob(args.root + "test_pt/*.pt")[:30000]
-
+pt_limit = 30000
+pt_list = glob.glob(os.path.join(args.data, "pt", "*.pt"))[:pt_limit]
 
 t0 = time.time()
 
 normalized, tup = [], []
 
 # normalize sentences
+print("\n-- LOADING AND NORMALIZING SENTENCES")
 for pt_file in tqdm(pt_list):
-   sentence_num, pt_load = 0, torch.load(pt_file)
-
-   for sent in pt_load:
-       sentence_num = sentence_num + 1
-       normalized.append(torch.nn.functional.normalize(sent, dim=0))
-       tup.append(f"{sentence_num}" + pt_file)
+    sentence_num, pt_load = 0, torch.load(pt_file)
+    for sent in pt_load:
+        sentence_num = sentence_num + 1
+        normalized.append(torch.nn.functional.normalize(sent, dim=0))
+        tup.append(f"{sentence_num}" + pt_file)
+        #print(f"{sentence_num}" + pt_file)
 
 r_list = []
 mode, num_r = args.mode.split(",")
@@ -152,34 +157,40 @@ mode, num_r = args.mode.split(",")
 # r_list.append(r)
 
 if r_list:
-   pass
+    pass
 else:
-   num_r = int(num_r)
+    num_r = int(num_r)
 
-   # kmeans
-   if mode == "kmeans":
-       # normalized_ = [norm.numpy() for norm in random.choices(normalized, k=min(100000, len(normalized)))]
-       normalized_ = [norm.half().numpy() for norm in normalized]
-       kmeans = KMeans(n_clusters=num_r, random_state=0, n_init=1, verbose=10).fit(normalized_)
-       r_list = torch.nn.functional.normalize(torch.tensor(kmeans.cluster_centers_).float())
+    # kmeans
+    if mode == "kmeans":
+        # normalized_ = [norm.numpy() for norm in random.choices(normalized, k=min(100000, len(normalized)))]
+        normalized_ = [norm.half().numpy() for norm in normalized]
+        kmeans = KMeans(n_clusters=num_r, random_state=0,
+                        n_init=1, verbose=10).fit(normalized_)
+        r_list = torch.nn.functional.normalize(
+            torch.tensor(kmeans.cluster_centers_).float())
 
-       if args.nest:
-           kmeans.labels_ = np.array([v*num_r for v in kmeans.labels_])
-           r_list = []
-           for i in range(num_r):
-               offset = i*num_r
-               select = np.where(kmeans.labels_ ==offset)[0]
-               normalized_2 = [ normalized_[i] for i in select]
-               kmeans2 = KMeans(n_clusters=num_r, random_state=0, n_init=1, verbose=10).fit(normalized_2)
-               kmeans2.labels_ = np.array([v +i*num_r for v in kmeans2.labels_])
-               np.put(kmeans.labels_, select, kmeans2.labels_)
-               r_list.append(torch.nn.functional.normalize(torch.tensor(kmeans2.cluster_centers_).float()))
+        if args.nest:
+            kmeans.labels_ = np.array([v*num_r for v in kmeans.labels_])
+            r_list = []
+            for i in range(num_r):
+                offset = i*num_r
+                select = np.where(kmeans.labels_ == offset)[0]
+                normalized_2 = [normalized_[i] for i in select]
+                kmeans2 = KMeans(n_clusters=num_r, random_state=0,
+                                 n_init=1, verbose=10).fit(normalized_2)
+                kmeans2.labels_ = np.array(
+                    [v + i*num_r for v in kmeans2.labels_])
+                np.put(kmeans.labels_, select, kmeans2.labels_)
+                r_list.append(torch.nn.functional.normalize(
+                    torch.tensor(kmeans2.cluster_centers_).float()))
 
-           r_list = torch.stack(r_list).view(num_r*num_r,normalized_[0].shape[-1])
+            r_list = torch.stack(r_list).view(
+                num_r*num_r, normalized_[0].shape[-1])
 
 
 gc.collect()
-cos = torch.nn.CosineSimilarity(dim=0)
+cos = torch.nn.CosineSimilarity(dim=1)
 
 # similarity between sentences and r
 t1 = time.time()
@@ -187,111 +198,131 @@ print("\nLoad Finished(", t1 - t0, "seconds )\n")  # display time
 
 # input query
 query_list = ["Cognitive science is the study of the human mind and brain",
-             "Cognitive scientists study intelligence and behavior with a focus on how nervous systems represent, process, and transform information",
-             "Cognitive science is an interdisciplinary field with contributors from various fields, including psychology, neuroscience, linguistics, philosophy of mind, computer science, anthropology and biology",
-             "Artificial intelligence involves the study of cognitive phenomena in machines to implement aspects of human intelligence in computers",
-             "Consciousness is the awareness of external objects and experiences within oneself",
-             "One of the fundamental concepts of cognitive science is that thinking can best be understood in terms of representational structures in the mind and computational procedures that operate on those structures",
-             "The cognitive sciences began as an intellectual movement in the 1950s, called the cognitive revolution",
-             "Cognitive science has a diversity of outlooks and methods that researchers in different fields bring to the study of mind and intelligence",
-             "The goal of cognitive science is to understand the representations and processes in our minds that underwrite these capacities",
-             "The brain controls all functions of the body, interprets information from the outside world, and embodies the essence of the mind and soul"]
+              "Cognitive scientists study intelligence and behavior with a focus on how nervous systems represent, process, and transform information",
+              "Cognitive science is an interdisciplinary field with contributors from various fields, including psychology, neuroscience, linguistics, philosophy of mind, computer science, anthropology and biology",
+              "Artificial intelligence involves the study of cognitive phenomena in machines to implement aspects of human intelligence in computers",
+              "Consciousness is the awareness of external objects and experiences within oneself",
+              "One of the fundamental concepts of cognitive science is that thinking can best be understood in terms of representational structures in the mind and computational procedures that operate on those structures",
+              "The cognitive sciences began as an intellectual movement in the 1950s, called the cognitive revolution",
+              "Cognitive science has a diversity of outlooks and methods that researchers in different fields bring to the study of mind and intelligence",
+              "The goal of cognitive science is to understand the representations and processes in our minds that underwrite these capacities",
+              "The brain controls all functions of the body, interprets information from the outside world, and embodies the essence of the mind and soul"]
 
 k = -1
 
 for text in query_list:
-   query, query_embedding = [], []
-   similaritylist, result_list, num = [0, 0, 0, 0, 0], [], 5
-   similarity_list, max_list, skip = [], [], 0
-   wrong_skip = 0
+    query, query_embedding = [], []
+    similaritylist, result_list, num = [0, 0, 0, 0, 0], [], 5
+    similarity_list, max_list, skip = [], [], 0
+    wrong_skip = 0
 
-   query.append(text)
+    query.append(text)
 
-   # query.append(input("\nSearch: "))
+    # query.append(input("\nSearch: "))
 
-   t0 = time.time()  # start time
+    t0 = time.time()  # start time
 
-   # create embedding for query
-   data_loader = torch.utils.data.DataLoader(query, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
-                                             drop_last=False, collate_fn=BERT_tokenizer)
+    # create embedding for query
+    data_loader = torch.utils.data.DataLoader(query, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
+                                              drop_last=False, collate_fn=BERT_tokenizer)
 
-   for x in data_loader:
-       query_embedding.append(my_encoder(x))
+    for x in data_loader:
+        query_embedding.append(my_encoder(x))
 
-   # cosine similarity between query and sentences: want 1
+    # cosine similarity between query and sentences: want 1
 
-   if mode == "base":
-       q = torch.nn.functional.normalize(query_embedding[0], dim=1)
-       q = q.flatten()
-       for k in tqdm(range(0, len(normalized))):
-           name = tup[k].split('/')
-           similarity = cos(normalized[k], q)
+    if mode == "base":
+        q = torch.nn.functional.normalize(query_embedding[0], dim=1)
+        q = q.flatten()
+        print("-- SEARCHING")
+        for k in tqdm(range(0, len(normalized))):
+            name = tup[k].split('/')
 
+            similarity = cos(normalized[k], q)
 
-           similarity_list.append("".join([f"{similarity}:::", name[-1], f"::sentence{name[0]}"]))
+            similarity_list.append(
+                "".join([f"{similarity.numpy()[0]}:::", name[-1], f"::sentence{name[0]}"]))
 
-           similarity_list.sort(reverse=True)
-           similarity_list = similarity_list[0:num]
+            similarity_list.sort(reverse=True)
+            similarity_list = similarity_list[0:num]
 
-   else:
-       q = torch.nn.functional.normalize(query_embedding[0], dim=1)
-       q = q.flatten()
+    else:
+        q = torch.nn.functional.normalize(query_embedding[0], dim=1)
+        q = q.flatten()
 
-       # similarity between query and r
-       cos_q_list = torch.Tensor([cos(q, r) for r in r_list])
-       k_idx = cos_q_list.argmax()
+        # similarity between query and r
+        cos_q_list = torch.Tensor([cos(q, r) for r in r_list])
+        k_idx = cos_q_list.argmax()
 
+        print("\n-- SEARCHING")
+        for k in tqdm(range(0, len(normalized))):
+            if kmeans.labels_[k] != k_idx:
+                skip = skip + 1
+                continue
+            name = tup[k].split('/')
+            similarity = cos(normalized[k], q)
 
-       for k in tqdm(range(0, len(normalized))):
-           if kmeans.labels_[k]!=k_idx:
-               skip = skip + 1
-               continue
-           name = tup[k].split('/')
-           similarity = cos(normalized[k], q)
+            similarity_list.append(
+                "".join([f"{similarity.numpy()[0]}:::", name[-1], f"::sentence{name[0]}"]))
 
+            similarity_list.sort(reverse=True)
+            similarity_list = similarity_list[0:num]
 
-           similarity_list.append("".join([f"{similarity}:::", name[-1], f"::sentence{name[0]}"]))
+        print("\nskips:", skip, "wrong_skip", wrong_skip)
 
-           similarity_list.sort(reverse=True)
-           similarity_list = similarity_list[0:num]
+    # return top 5 results: result number, file, page, sentence
+    for i in range(0, num):
+        file_to_return = similarity_list[i].split(":::")
+        result_list.append(file_to_return[-1].replace(".pt", ".txt"))
 
-       print("\nskips:", skip, "wrong_skip", wrong_skip)
+    t1 = time.time()
+    print("\n-- RESULTS (", t1 - t0, "seconds )")  # display time
 
-   # return top 5 results: result number, file, page, sentence
-   for i in range(0, num):
-       file_to_return = similarity_list[i].split(":::")
-       result_list.append(file_to_return[-1].replace(".pt", ".txt"))
+    display = np.empty((0, 5), str)  # 2d array using numpy
+    order = 0
 
-   t1 = time.time()
-   print("\nResults (", t1 - t0, "seconds ):\n")  # display time
+    for txt in result_list:
+        similarity = similarity_list[order]
+        similarity = similarity[0:similarity.find(':')]  # similarity
 
-   display = np.empty((0, 5), str)  # 2d array using numpy
-   order = 0
+        order = order + 1
 
-   for txt in result_list:
-       similarity = similarity_list[order]
-       similarity = similarity[0:similarity.find(':')]  # similarity
+        result = txt.split("::")
 
-       order = order + 1
+        result[1] = (result[1].replace(".txt", "")).replace(
+            "pg", "")  # result[1] = page number
 
-       result = txt.split("::")
+        # result[-1] = sentence number
+        num = int(result[-1].replace("sentence", ""))
 
-       result[1] = (result[1].replace(".txt", "")).replace("pg", "")  # result[1] = page number
+        with open(os.path.join(args.data, "txt_clean", result[0]), 'r') as f:
+            sentence_list = f.readlines()
 
-       num = int(result[-1].replace("sentence", ""))  # result[-1] = sentence number
+            sentence = sentence_list[num - 1]  # sentence
 
-       with open(args.root + f"sample_txt_pgs_clean/{result[0]}", 'r') as f:
-           sentence_list = f.readlines()
-           sentence = sentence_list[num - 1]  # sentence
+        name_ = result[0].split("_")
+        page_ = name_[-1].replace(".txt", "")
+        page_ = page_.replace("pg", "")  # page number
+        name_ = name_[0] + ".txt"  # file name
 
-       name_ = result[0].split("_")
-       page_ = name_[-1].replace(".txt", "")
-       page_ = page_.replace("pg", "")  # page number
-       name_ = name_[0] + ".txt"  # file name
+        display = np.append(display, np.array([[f"{order}", similarity, name_, page_, sentence]]),
+                            axis=0)  # append results
+        
+    filename_max_len = 40
+    pagenum_max_digits = 4
+    sentence_max_len = 75
+    
+    for row in display:
+            if len(row[2]) > filename_max_len:
+                row[2] = row[2][:filename_max_len-3] + "..."
+            if len(row[3]) > pagenum_max_digits:
+                pass	# lets hope we never run into that...
+            if len(row[4]) > sentence_max_len:
+                row[4] = row[4][:sentence_max_len-3] + "..."              
+    #print(f"{'#':col1}| {'Similarity':5}")
 
-       display = np.append(display, np.array([[f"{order}", similarity, name_, page_, sentence]]),
-                           axis=0)  # append results
-
-   print("Query:", query[0], "\n")
-   print(tabulate(display, headers=["Result", "Similarity", "File", "Page", "Text"]))  # print with headers
-   print("\n")
+    print("Query:", query[0], "\n")
+    # print with headers
+    print(tabulate(display, headers=[
+          "Result", "Similarity", "File", "Page", "Text"]))
+    print("\n")

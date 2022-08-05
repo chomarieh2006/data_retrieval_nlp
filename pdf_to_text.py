@@ -45,6 +45,9 @@ def clean_text(text):
 def extract_pdfdir_text(pdfdir, txtdir):
     pdf_list = glob.glob(os.path.join(pdfdir, "*.pdf"))
     
+    if not os.path.exists(txtdir):
+        os.mkdir(txtdir)
+    
     print("\n-- EXTRACTING TEXT to", txtdir)
     print("(Files, Page of Current File)")
 
