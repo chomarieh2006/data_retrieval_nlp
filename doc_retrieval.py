@@ -295,7 +295,7 @@ for text in query_list:
         # result[-1] = sentence number
         num = int(result[-1].replace("sentence", ""))
 
-        with open(os.path.join(args.data, "txt_clean", result[0]), 'r') as f:
+        with open(os.path.join(args.data, "txt", result[0]), 'r') as f:
             sentence_list = f.readlines()
 
             sentence = sentence_list[num - 1]  # sentence
