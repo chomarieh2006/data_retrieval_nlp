@@ -45,7 +45,7 @@ No further preparation steps are necessary.
 
 **Generate Embeddings and Data Retrieval**
 
-Once plain text files have been obtained, run `doc_retrieval2.py`.
+Once plain text files have been obtained, run `doc_retrieval.py`.
 
 When asked for "Path to directory," type path to downloaded directory and the folder name which contained the zip files. 
 For example: */home/name/Documents/demo/*
