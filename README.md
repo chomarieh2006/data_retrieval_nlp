@@ -54,7 +54,3 @@ Each time you run the program, it will generate embeddings for any new text (whi
 
 Once embeddings have been generated, you will be prompted for a search term. 
 
-
-## Note
-
-Program is not yet finished and is subject to change
