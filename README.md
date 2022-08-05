@@ -34,23 +34,21 @@ Tesseract OCR
 sudo apt install tesseract-ocr
 ```
 
+SpaCy Profile
+```
+python3 -m spacy download en_core_web_sm
+```
+
 ## Usage
 
-Download these [files](https://www.dropbox.com/sh/4gedwm2sc7ylsxf/AAB798H6sdVW4n9iV5TZWF5Qa?dl=0). 
+You will need pdf files to search through. You may download these sample [files](https://www.dropbox.com/sh/4gedwm2sc7ylsxf/AAB798H6sdVW4n9iV5TZWF5Qa?dl=0) or use your own. Store these source files in a directory. By default, this directory would be `/home/{user}/daviesearch/` on a Linux machine.
 
-Make sure to store in a directory you remember and extract the zip files in that directory. 
+Once plain text files have been obtained, run `doc_retrieval.py`, which uses the following arguments:
 
-No further preparation steps are necessary.
+- `--source`: path of folder with source files (default: /home/{user}/daviesearch/)
+- `--data`: path of folder to store program data (default: /home/{user}/daviesearch_data/)
+- `--extract_text`: extract text from source files (default: True)
+- `--embeddings`: generate embeddings (default: True)
+- `--mode`: enable/disable optimization (default: base,0 - if you would like to enable optimization, use kmeans,4)
 
-
-**Generate Embeddings and Data Retrieval**
-
-Once plain text files have been obtained, run `doc_retrieval.py`.
-
-When asked for "Path to directory," type path to directory which contains the zip files. 
-For example: */home/name/Documents/demo/*
-
-Each time you run the program, it will generate embeddings for any new text (which will include everything when running this program for the first time, unless you have downloaded the pre-organized files). This may take a significant amount of time for large datasets.
-
-Once embeddings have been generated, you will be prompted for a search term. 
-
+Each time you run the program, it will generate embeddings for any new text (which will include everything when running this program for the first time). This may take a significant amount of time for large datasets.
