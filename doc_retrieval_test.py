@@ -21,7 +21,6 @@ parser.add_argument(
     '--data', default=f"/home/{os.getlogin()}/daviesearch_data/")
 parser.add_argument('--extract_text', action='store_true')
 parser.add_argument('--embeddings', action='store_true', default=True)
-parser.add_argument('--query', default="")
 parser.add_argument('--debug', action='store_true', default=True)
 # optimized vs nonoptimized (base if no optimization,
 parser.add_argument('--mode', default="base,0")
@@ -31,13 +30,11 @@ args = parser.parse_args()
 
 # SETTINGS
 pt_limit = 30000		# max number of document embeddings to load into memory
-filename_max_len = 40  # character length of filename column in results
-pagenum_max_digits = 4  # character length of pagenum column in results
-sentence_max_len = 75  # character length of sentence text column in results
+filename_max_len = 40	# character length of filename column in results
+pagenum_max_digits = 4	# character length of pagenum column in results
+sentence_max_len = 75	# character length of sentence text column in results
 
 # separate text into sentences and clean
-
-
 def read_file(filename):
 
     sentence_list = []
@@ -140,6 +137,7 @@ if args.embeddings:
         torch.save(file_embedding, pt_file_name)  # save in pt file
 
 
+
 pt_list = glob.glob(os.path.join(args.data, "pt", "*.pt"))[:pt_limit]
 
 t0 = time.time()
@@ -203,113 +201,128 @@ cos = torch.nn.CosineSimilarity(dim=1)
 t1 = time.time()
 print("\nLoad Finished(", t1 - t0, "seconds )\n")  # display time
 
+# input query
+query_list = ["Cognitive science is the study of the human mind and brain",
+              "Cognitive scientists study intelligence and behavior with a focus on how nervous systems represent, process, and transform information",
+              "Cognitive science is an interdisciplinary field with contributors from various fields, including psychology, neuroscience, linguistics, philosophy of mind, computer science, anthropology and biology",
+              "Artificial intelligence involves the study of cognitive phenomena in machines to implement aspects of human intelligence in computers",
+              "Consciousness is the awareness of external objects and experiences within oneself",
+              "One of the fundamental concepts of cognitive science is that thinking can best be understood in terms of representational structures in the mind and computational procedures that operate on those structures",
+              "The cognitive sciences began as an intellectual movement in the 1950s, called the cognitive revolution",
+              "Cognitive science has a diversity of outlooks and methods that researchers in different fields bring to the study of mind and intelligence",
+              "The goal of cognitive science is to understand the representations and processes in our minds that underwrite these capacities",
+              "The brain controls all functions of the body, interprets information from the outside world, and embodies the essence of the mind and soul"]
+
 k = -1
 
-query, query_embedding = [], []
-similaritylist, result_list, num = [0, 0, 0, 0, 0], [], 5
-similarity_list, max_list, skip = [], [], 0
-wrong_skip = 0
+for text in query_list:
+    query, query_embedding = [], []
+    similaritylist, result_list, num = [0, 0, 0, 0, 0], [], 5
+    similarity_list, max_list, skip = [], [], 0
+    wrong_skip = 0
 
-query.append(args.query if len(args.query) > 0 else input("\nSearch: "))
+    query.append(text)
 
-t0 = time.time()  # start time
+    # query.append(input("\nSearch: "))
 
-# create embedding for query
-data_loader = torch.utils.data.DataLoader(query, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
-											drop_last=False, collate_fn=BERT_tokenizer)
+    t0 = time.time()  # start time
 
-for x in data_loader:
-	query_embedding.append(my_encoder(x))
+    # create embedding for query
+    data_loader = torch.utils.data.DataLoader(query, batch_size=1, shuffle=False, pin_memory=True, num_workers=1,
+                                              drop_last=False, collate_fn=BERT_tokenizer)
 
-# cosine similarity between query and sentences: want 1
+    for x in data_loader:
+        query_embedding.append(my_encoder(x))
 
-if mode == "base":
-	q = torch.nn.functional.normalize(query_embedding[0], dim=1)
-	q = q.flatten()
-	print("\n-- SEARCHING")
-	for k in tqdm(range(0, len(normalized))):
-		name = tup[k].split('/')
+    # cosine similarity between query and sentences: want 1
 
-		similarity = cos(normalized[k], q)
+    if mode == "base":
+        q = torch.nn.functional.normalize(query_embedding[0], dim=1)
+        q = q.flatten()
+        print("-- SEARCHING")
+        for k in tqdm(range(0, len(normalized))):
+            name = tup[k].split('/')
 
-		similarity_list.append(
-			"".join([f"{similarity.numpy()[0]}:::", name[-1], f"::sentence{name[0]}"]))
+            similarity = cos(normalized[k], q)
 
-		similarity_list.sort(reverse=True)
-		similarity_list = similarity_list[0:num]
+            similarity_list.append(
+                "".join([f"{similarity.numpy()[0]}:::", name[-1], f"::sentence{name[0]}"]))
 
-else:
-	q = torch.nn.functional.normalize(query_embedding[0], dim=1)
-	q = q.flatten()
+            similarity_list.sort(reverse=True)
+            similarity_list = similarity_list[0:num]
 
-	# similarity between query and r
-	cos_q_list = torch.Tensor([cos(q, r) for r in r_list])
-	k_idx = cos_q_list.argmax()
+    else:
+        q = torch.nn.functional.normalize(query_embedding[0], dim=1)
+        q = q.flatten()
 
-	print("\n-- SEARCHING")
-	for k in tqdm(range(0, len(normalized))):
-		if kmeans.labels_[k] != k_idx:
-			skip = skip + 1
-			continue
-		name = tup[k].split('/')
-		similarity = cos(normalized[k], q)
+        # similarity between query and r
+        cos_q_list = torch.Tensor([cos(q, r) for r in r_list])
+        k_idx = cos_q_list.argmax()
 
-		similarity_list.append(
-			"".join([f"{similarity.numpy()[0]}:::", name[-1], f"::sentence{name[0]}"]))
+        print("\n-- SEARCHING")
+        for k in tqdm(range(0, len(normalized))):
+            if kmeans.labels_[k] != k_idx:
+                skip = skip + 1
+                continue
+            name = tup[k].split('/')
+            similarity = cos(normalized[k], q)
 
-		similarity_list.sort(reverse=True)
-		similarity_list = similarity_list[0:num]
+            similarity_list.append(
+                "".join([f"{similarity.numpy()[0]}:::", name[-1], f"::sentence{name[0]}"]))
 
-	print("\nskips:", skip, "wrong_skip", wrong_skip)
+            similarity_list.sort(reverse=True)
+            similarity_list = similarity_list[0:num]
 
-# return top 5 results: result number, file, page, sentence
-for i in range(0, num):
-	file_to_return = similarity_list[i].split(":::")
-	result_list.append(file_to_return[-1].replace(".pt", ".txt"))
+        print("\nskips:", skip, "wrong_skip", wrong_skip)
 
-t1 = time.time()
-print("\n-- RESULTS (", t1 - t0, "seconds )")  # display time
+    # return top 5 results: result number, file, page, sentence
+    for i in range(0, num):
+        file_to_return = similarity_list[i].split(":::")
+        result_list.append(file_to_return[-1].replace(".pt", ".txt"))
 
-display = np.empty((0, 5), str)  # 2d array using numpy
-order = 0
+    t1 = time.time()
+    print("\n-- RESULTS (", t1 - t0, "seconds )")  # display time
 
-for txt in result_list:
-	similarity = similarity_list[order]
-	similarity = similarity[0:similarity.find(':')]  # similarity
+    display = np.empty((0, 5), str)  # 2d array using numpy
+    order = 0
 
-	order = order + 1
+    for txt in result_list:
+        similarity = similarity_list[order]
+        similarity = similarity[0:similarity.find(':')]  # similarity
 
-	result = txt.split("::")
+        order = order + 1
 
-	result[1] = (result[1].replace(".txt", "")).replace(
-		"pg", "")  # result[1] = page number
+        result = txt.split("::")
 
-	# result[-1] = sentence number
-	num = int(result[-1].replace("sentence", ""))
+        result[1] = (result[1].replace(".txt", "")).replace(
+            "pg", "")  # result[1] = page number
 
-	with open(os.path.join(args.data, "txt", result[0]), 'r') as f:
-		sentence_list = f.readlines()
+        # result[-1] = sentence number
+        num = int(result[-1].replace("sentence", ""))
 
-		sentence = sentence_list[num - 1]  # sentence
+        with open(os.path.join(args.data, "txt", result[0]), 'r') as f:
+            sentence_list = f.readlines()
 
-	name_ = result[0].split("_")
-	page_ = name_[-1].replace(".txt", "")
-	page_ = page_.replace("pg", "")  # page number
-	name_ = name_[0] + ".txt"  # file name
+            sentence = sentence_list[num - 1]  # sentence
 
-	display = np.append(display, np.array([[f"{order}", similarity, name_, page_, sentence]]),
-						axis=0)  # append results
+        name_ = result[0].split("_")
+        page_ = name_[-1].replace(".txt", "")
+        page_ = page_.replace("pg", "")  # page number
+        name_ = name_[0] + ".txt"  # file name
 
-for row in display:
-	if len(row[2]) > filename_max_len:
-		row[2] = row[2][:filename_max_len-3] + "..."
-	if len(row[3]) > pagenum_max_digits:
-		pass  # lets hope we never run into that...
-	if len(row[4]) > sentence_max_len:
-		row[4] = row[4][:sentence_max_len-3] + "..."
+        display = np.append(display, np.array([[f"{order}", similarity, name_, page_, sentence]]),
+                            axis=0)  # append results
+            
+    for row in display:
+            if len(row[2]) > filename_max_len:
+                row[2] = row[2][:filename_max_len-3] + "..."
+            if len(row[3]) > pagenum_max_digits:
+                pass	# lets hope we never run into that...
+            if len(row[4]) > sentence_max_len:
+                row[4] = row[4][:sentence_max_len-3] + "..."              
 
-print("Query:", query[0], "\n")
-# print with headers
-print(tabulate(display, headers=[
-		"Result", "Similarity", "File", "Page", "Text"]))
-print("\n")
+    print("Query:", query[0], "\n")
+    # print with headers
+    print(tabulate(display, headers=[
+          "Result", "Similarity", "File", "Page", "Text"]))
+    print("\n")
