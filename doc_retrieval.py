@@ -19,8 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--source', default=f"/home/{os.getlogin()}/daviesearch/")
 parser.add_argument(
     '--data', default=f"/home/{os.getlogin()}/daviesearch_data/")
-parser.add_argument('--extract_text', action='store_true')
-parser.add_argument('--embeddings', action='store_true', default=True)
+parser.add_argument('--noscan', action='store_true', default=False)
 parser.add_argument('--query', default="")
 parser.add_argument('--debug', action='store_true', default=True)
 # optimized vs nonoptimized (base if no optimization,
@@ -104,13 +103,13 @@ def BERT_tokenizer(batch):
 my_encoder = BERT_Model(bert_model, BERT_tokenizer)
 
 
-if args.extract_text:
+if not args.noscan:
+    # extract text to data directory
     print(os.path.join(args.data, "txt"))
     print(args.source)
     extract_pdfdir_text(args.source, os.path.join(args.data, "txt"))
 
-# create embedding for files and store in pt file
-if args.embeddings:
+	# create embedding for files and store in pt file
     pt_file_dir = os.path.join(args.data, "pt")
 
     if not os.path.exists(pt_file_dir):
