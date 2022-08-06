@@ -6,3 +6,5 @@ img_captioning/runs/*
 img_captioning/test_examples/*
 
 *.pth.tar
+
+__pycache__/*
