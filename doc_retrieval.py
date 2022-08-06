@@ -13,7 +13,6 @@ from sklearn.cluster import KMeans  # kmeans clustering
 import gc  # garbage collect
 from pdf_to_text import extract_pdfdir_text
 
-
 parser = argparse.ArgumentParser()
 # root is source data
 parser.add_argument('--source', default=f"/home/{os.getlogin()}/daviesearch/")
@@ -27,6 +26,17 @@ parser.add_argument('--mode', default="base,0")
 # kmeans, #clusters if want optimization)
 parser.add_argument('--nest', action='store_true')
 args = parser.parse_args()
+
+# verify data directory exists
+if not os.path.exists(args.data):
+    os.mkdir(args.data)
+if not os.path.exists(os.path.join(args.data, "txt")):
+    os.mkdir(os.path.join(args.data, "txt"))
+if not os.path.exists(os.path.join(args.data, "pt")):
+    os.mkdir(os.path.join(args.data, "pt"))
+if not os.path.exists(os.path.join(args.data, "txt_clean")):
+    os.mkdir(os.path.join(args.data, "txt_clean"))
+
 
 # SETTINGS
 pt_limit = 30000		# max number of document embeddings to load into memory
@@ -102,11 +112,10 @@ def BERT_tokenizer(batch):
 # bert model
 my_encoder = BERT_Model(bert_model, BERT_tokenizer)
 
+print("\n"*50)
 
 if not args.noscan:
     # extract text to data directory
-    print(os.path.join(args.data, "txt"))
-    print(args.source)
     extract_pdfdir_text(args.source, os.path.join(args.data, "txt"))
 
 	# create embedding for files and store in pt file
@@ -135,7 +144,6 @@ if not args.noscan:
         for x in data_loader:
             file_embedding.append(my_encoder(x))
 
-        print(len(file_embedding))
         torch.save(file_embedding, pt_file_name)  # save in pt file
 
 
