@@ -53,3 +53,10 @@ Then run `doc_retrieval.py`, which uses the following arguments:
 
 By default, each time you run the program, it will extract text and generate embeddings for any new sources (which will include everything when running this program for the first time). This may take a significant amount of time for large datasets.
 
+For an example, see the GIF below:
+![alt](data/demo.gif)
+
+## Future Work Ideas
+
+- Multithreading
+- Background program to automatically extract text and generate embeddings
